@@ -1,0 +1,15 @@
+To properly implement refraction, I first need to have a good way to validate that my results are correct, So use Peter SHirley book 
+
+Fundamentals of Computer Graphics
+
+https://web.stanford.edu/class/cs148/pdf/class_13_reflection_and_transmission.pdf
+
+Low Cost Adaptive Anti-Aliasing for Real-Time Ray-Tracing
+Maxim Shevtsov, Mikhail Letavin and Alexey Rukhlinskiy
+Intel Corporation
+Nizhniy Novgorod, Russia
+{maxim.y.shevtsov, mikhail.letavin, alexey.v.rukhlinskiy}@intel.com
+
+Areas that need to be anti aliased are identified by recognizing that average differential between samples, then we shoot more rays more finely. We do this in parallel by doing it in batches
+
+To do soft shadows we add a radius component to the light, then for each shadow ray we generate many shadow rays pointing to random points inside the light, and take the average.

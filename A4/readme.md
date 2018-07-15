@@ -1,0 +1,35 @@
+![hi](https://github.com/oxue/raytracer/blob/master/Assets/sample.png)
+
+Compile with premake4 gmake && make
+Tested on gl36.student.cs machine
+
+Extra Feature:
+
+* Reflections
+
+Unique Scene: 
+
+* A winter scene with a snowman and cow and frozen lake. There are rocks in the lake and trees on the shore. There is a happy cow skating on the ice. The lake is reflective
+
+Acceleration: (OFF by default)
+
+* To enable, run the binary with the -acc switch: './A4 -acc Assets/sample.lua'
+* Acceleration works by having a hierarchy of bounding spheres for every mesh, node, primitive etc. This means for a scene with many nested nodes, there are many nested spheres each properly contained in their parent sphere. 
+* Acceleration is demonstrated by macho-cows-bb.png. The primitives all have bounding spheres including the floor, we are inside that sphere so thats why the background is green. The reason that arcs have part of the bounding sphere cut off is to show they are further inside a bounding sphere encapsulating the arc object, so those regions don't get rendered. 
+* In practice the spheres containing spheres and cubes are skipped because the cost of an extra sphere-ray intersection is not worth it when there is only one child, but they are rendered in macho-cows-bb.png anyways, for consistency.
+
+* The following is time spent rendering macho-cows with and without -acc switch:
+
+(WITH -acc)
+real	0m29.260s
+user	0m28.144s
+sys	0m0.267s
+
+(WITHOUT -acc)
+real	6m57.816s
+user	6m29.006s
+sys	0m4.247s
+
+Screenshot:
+* My screenshot is the same as sample.png
+

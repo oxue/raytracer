@@ -1,0 +1,17 @@
+all features required should be implemented
+comma can double as middle click, should you need it
+puppet.lua and ape.lua contain the same model (both in assets folder)
+
+high level structure of puppet:
+
+puppet starts at the torso as the root of the puppet, and torso is under rootNode
+The neck rotation is done by using addition layers of joints
+The limbs more or less follow the strucutre of
+
+    sphere->joint->rest
+
+and the rotation is done by rotating the joint, and using recursion to carry out rest transformations.
+
+the banana is movable and is a DOF
+the hotkey for P is L instead to avoid collision with the pause function
+selected joints are indicated by flashing yellow
