@@ -11,7 +11,7 @@ scene:rotate('X', 15)
 scene:translate(0, -1, 0)
 
 checker_tex = gr.texture("Assets/checkerboard.png")
-wood_tex = gr.texture("Assets/wood.png")
+--wood_tex = gr.texture("Assets/wood.png")
 
 s3 = gr.sphere('glass sphere')
 s3:scale(1,1,1)
@@ -23,7 +23,7 @@ s1 = gr.sphere('wood sphere')
 s1:scale(1,1,1)
 s1:translate(-1,1.5,-2)
 s1:set_material(wood);
-s1:set_texture(wood_tex);
+--s1:set_texture(wood_tex);
 scene:add_child(s1);
 
 -- the floor
@@ -34,18 +34,9 @@ plane:set_texture(checker_tex);
 plane:scale(4, 4, 4)
 plane:translate(0,0,-1);
 
-mirror = gr.mesh( 'mirror', 'plane.obj' )
---scene:add_child(mirror)
-mirror:set_material(glossy_mirror)
-mirror:rotate('X', -90)
-mirror:rotate('Y', 120)
-mirror:scale(2, 2, 2)
-mirror:translate(1,2,-1);
-
--- The lights
 l1 = gr.light({1,4,1}, {1, 1, 1}, {1, 0, 0})
 --l2 = gr.light({0, 5, -20}, {0.8, 0.8, 0.8}, {1, 0, 0})
 
-gr.render(scene, 'texture2.png', 400, 400, 
+gr.render(scene, 'prim.png', 400, 400, 
 	  {0, 0, 10}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.4, 0.4, 0.4}, {l1})

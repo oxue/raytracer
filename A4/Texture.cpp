@@ -3,12 +3,14 @@
 #include "lodepng.h"
 #include <iostream>
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 #include <vector>
 
 using namespace std;
 using namespace glm;
 
-Texture::Texture(const std::string & path){
+Texture::Texture(const std::string & path, bool isTransparent){
+	transparent = isTransparent;
 	auto error = lodepng::decode(*((vector<unsigned char>*)&data), width, height, path);
 	if(!error){
 		cout<<"Texture " << path << " loaded"<<endl;
@@ -21,9 +23,13 @@ Texture::Texture(const std::string & path){
 	}
 }
 
-vec3 Texture::getColor(double u, double v)
+vec4 Texture::getColor(double u, double v)
 {
 	int index = int(u * width) + int(v * height) * width;
 	rgba color = data[index];
-	return vec3(color.r/255.0,color.g/255.0,color.b/255.0);
+	if(transparent) {
+		vec4 ret = vec4(color.r/255.0,color.g/255.0,color.b/255.0, color.a/255.0);
+		return ret;
+	}
+	return vec4(color.r/255.0,color.g/255.0,color.b/255.0, 1.0);
 }

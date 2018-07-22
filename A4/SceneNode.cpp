@@ -61,12 +61,23 @@ void SceneNode::set_transform(const glm::mat4& m) {
 }
 
 //---------------------------------------------------------------------------------------
-const glm::mat4& SceneNode::get_transform() const {
+const glm::mat4 SceneNode::get_transform(float timeStep) const {
+	if(timeStep != 0){
+		return get_timeTransform(timeStep) * trans;
+	}
 	return trans;
 }
 
+const glm::mat4 SceneNode::get_timeTransform(float timeStep) const {
+	return glm::translate(0.5 * timeStep* timeStep * m_acceleration + timeStep * m_velocity) * 
+		glm::rotate(m_rotational_velocity.x * timeStep, vec3(0,0,1));
+}
+
 //---------------------------------------------------------------------------------------
-const glm::mat4& SceneNode::get_inverse() const {
+const glm::mat4 SceneNode::get_inverse(float timeStep) const {
+	if(timeStep != 0) {
+		return glm::inverse(get_timeTransform(timeStep) * trans);
+	}
 	return invtrans;
 }
 
@@ -75,14 +86,14 @@ void SceneNode::add_child(SceneNode* child) {
 	children.push_back(child);
 }
 
-double SceneNode::getMaxRadius() {
+double SceneNode::getMaxRadius(float t) {
 	return 10000;
 	if(cachedMaxR >= 0) return cachedMaxR;
 
 	double maxR = -1.0;
 	for(SceneNode* node:children){
-		double dist = glm::length(get_transform() * dvec4(0,0,0,1.0)) 
-		+ glm::length(get_transform() * dvec4(node->getMaxRadius(),0,0,1.0));
+		double dist = glm::length(get_transform(t) * dvec4(0,0,0,1.0)) 
+		+ glm::length(get_transform(t) * dvec4(node->getMaxRadius(t),0,0,1.0));
 		if(dist > maxR)
 			maxR = dist;
 	}
@@ -127,43 +138,41 @@ void SceneNode::translate(const glm::vec3& amount) {
 	set_transform( glm::translate(amount) * trans );
 }
 
+void SceneNode::setVelocity(const glm::vec3& amount) {
+	m_velocity = amount;
+}
+
+void SceneNode::setRotationalVelocity(const glm::vec3& amount) {
+	m_rotational_velocity = amount;
+}
+
+void SceneNode::setAcceleration(const glm::vec3& amount) {
+	m_acceleration = amount;
+}
 
 //---------------------------------------------------------------------------------------
 int SceneNode::totalSceneNodes() const {
 	return nodeInstanceCount;
 }
 
-dvec4 SceneNode::backTraceNormal(dvec4 N){
-	return normalize(vec4(transpose(dmat3(get_inverse())) * dvec3(N),0.0));
+dvec4 SceneNode::backTraceNormal(dvec4 N, float t){
+	return normalize(vec4(transpose(dmat3(get_inverse(t))) * dvec3(N),0.0));
 }
 
-bool SceneNode::hit(Ray &r, ColInfo &info, bool shortcut) {
+bool SceneNode::hit(Ray &r, ColInfo &info, bool shortcut, float t) {
 	info.t = INFINITY;
 	ColInfo mInfo;
+	mInfo.t = INFINITY;
 
 	bool hit = false;
 
 	for(SceneNode* child : children) {
 		Ray deepRay = {
-			dmat4(get_inverse()) * r.origin,
-			dmat4(get_inverse()) * r.head
+			dmat4(get_inverse(t)) * r.origin,
+			dmat4(get_inverse(t)) * r.head
 		};
 
-		double mRad = child->getMaxRadius();
-		if(shortcut && mRad > 0){
-			Ray deepRay2 = {
-				get_inverse() * r.origin,
-				get_inverse() * r.head
-			};
-			NonhierSphere s = NonhierSphere({0, 0, 0}, mRad);
-			ColInfo mcf;
-			if(!s.hit(deepRay2, mcf)) {
-				earlyReturn++;
-				continue;
-			}
-		}
-
-		if(child->hit(deepRay, mInfo, shortcut)){
+		if(child->hit(deepRay, mInfo, shortcut, t)){
 
 			hit = true;
 			if(mInfo.t < info.t){
@@ -171,8 +180,7 @@ bool SceneNode::hit(Ray &r, ColInfo &info, bool shortcut) {
 			}
 		}
 	}
-
-	info.N = backTraceNormal(info.N);
+	info.N = backTraceNormal(info.N, t);
 	return hit;
 }
 

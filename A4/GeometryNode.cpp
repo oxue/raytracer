@@ -4,6 +4,7 @@
 #include <iostream>
 #include "Texture.hpp"
 #include "ColInfo.hpp"
+#include "util.hpp"
 
 using namespace std;
 using namespace glm;
@@ -20,8 +21,8 @@ GeometryNode::GeometryNode(
 	m_nodeType = NodeType::GeometryNode;
 }
 
-double GeometryNode::getMaxRadius(){
-	return length(get_transform()*m_primitive->getPos()) + length(get_transform() * dvec4(m_primitive->maxRadius,0,0,1));
+double GeometryNode::getMaxRadius(float t){
+	return length(get_transform(t)*m_primitive->getPos()) + length(get_transform(t) * dvec4(m_primitive->maxRadius,0,0,1));
 }
 
 void GeometryNode::setMaterial( Material *mat )
@@ -45,11 +46,16 @@ void GeometryNode::setTexture( Texture * texture )
 	m_material->texture = texture;
 }
 
-bool GeometryNode::hit(Ray &r, ColInfo &info, bool shortcut){
+void GeometryNode::setNormalMap( Texture * texture )
+{
+	m_material->normalMap = texture;
+}
+
+bool GeometryNode::hit(Ray &r, ColInfo &info, bool shortcut, float t){
 	if(shortcut && m_primitive->maxRadius > 0 && !m_primitive->skipCheck){
 		Ray deepRay = {
-			get_inverse() * r.origin,
-			get_inverse() * r.head
+			get_inverse(t) * r.origin,
+			get_inverse(t) * r.head
 		};
 		NonhierSphere s = NonhierSphere({0, 0, 0}, m_primitive->maxRadius);
 		ColInfo cf;
@@ -60,20 +66,30 @@ bool GeometryNode::hit(Ray &r, ColInfo &info, bool shortcut){
 	}
 
 	Ray deepRay = {
-		get_inverse() * r.origin,
-		get_inverse() * r.head
+		get_inverse(t) * r.origin,
+		get_inverse(t) * r.head
 	};
 	if(m_primitive->hit(deepRay, info))
 	{
 		PhongMaterial* pMat = (PhongMaterial*)m_material;
 		info.material = *pMat;
 		if(pMat->texture != nullptr){
-			info.material.m_kd = pMat->texture->getColor(info.uv.x, info.uv.y) * pMat->m_kd;//N.x/2.0 + 0.5,N.y/2.0 + 0.5);	
-		}else
-		{
-			info.material.m_kd = pMat->m_kd;
+			vec4 texColor = pMat->texture->getColor(info.uv.x, info.uv.y);//N.x/2.0 + 0.5,N.y/2.0 + 0.5);
+			if(texColor.w == 0) return false;
+			info.material.m_kd = vec3(texColor.x, texColor.y, texColor.z)* pMat->m_kd;
 		}
-		info.N = backTraceNormal(info.N);
+		if(pMat->normalMap != nullptr){
+			dvec3 N3 = vec4Tovec3(info.N);
+
+			dvec3 T = info.tangent;
+			dvec3 B = info.bitangent;
+			vec4 normColor = pMat->normalMap->getColor(info.uv.x, info.uv.y);
+			dvec3 perturbNormal = vec3(normColor.x,normColor.y,normColor.z);
+			perturbNormal = normalize(perturbNormal * 2.0 - dvec3(1.0));
+			info.N += dvec4(perturbNormal.x * T + perturbNormal.y * B,0);
+			info.N = normalize(info.N);
+		}
+		info.N = backTraceNormal(info.N, t);
 
 		return true;
 	}

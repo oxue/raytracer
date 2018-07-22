@@ -16,11 +16,12 @@ struct rgba{
 
 class Texture{
 public:
-	Texture(const std::string &path);
+	Texture(const std::string &path, bool isTransparent);
 
 	vector<rgba> data;
 	unsigned int width;
 	unsigned int height;
+	bool transparent;
 
-	vec3 getColor(double u, double v);
+	vec4 getColor(double u, double v);
 };

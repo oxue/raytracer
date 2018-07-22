@@ -412,6 +412,30 @@ int gr_node_add_child_cmd(lua_State* L)
 
 // Set a node's material
 extern "C"
+int gr_node_set_normalmap_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_node_ud* selfdata = (gr_node_ud*)luaL_checkudata(L, 1, "gr.node");
+  luaL_argcheck(L, selfdata != 0, 1, "Node expected");
+
+  GeometryNode* self = dynamic_cast<GeometryNode*>(selfdata->node);
+
+  luaL_argcheck(L, self != 0, 1, "Geometry node expected");
+  
+  gr_texture_ud* texData = (gr_texture_ud*)luaL_checkudata(L, 2, "gr.texture");
+  luaL_argcheck(L, texData != 0, 2, "Texture expected");
+
+  Texture* texture = texData->texture;
+
+  self->setNormalMap(texture);
+
+  return 0;
+}
+
+
+// Set a node's material
+extern "C"
 int gr_node_set_texture_cmd(lua_State* L)
 {
   GRLUA_DEBUG_CALL;
@@ -500,6 +524,71 @@ int gr_node_translate_cmd(lua_State* L)
   return 0;
 }
 
+// Add a translation to a node.
+extern "C"
+int gr_node_acceleration_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_node_ud* selfdata = (gr_node_ud*)luaL_checkudata(L, 1, "gr.node");
+  luaL_argcheck(L, selfdata != 0, 1, "Node expected");
+
+  SceneNode* self = selfdata->node;
+
+  double values[3];
+  
+  for (int i = 0; i < 3; i++) {
+    values[i] = luaL_checknumber(L, i + 2);
+  }
+
+  self->setAcceleration(glm::vec3(values[0], values[1], values[2]));
+
+  return 0;
+}
+
+// Add a translation to a node.
+extern "C"
+int gr_node_velocity_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_node_ud* selfdata = (gr_node_ud*)luaL_checkudata(L, 1, "gr.node");
+  luaL_argcheck(L, selfdata != 0, 1, "Node expected");
+
+  SceneNode* self = selfdata->node;
+
+  double values[3];
+  
+  for (int i = 0; i < 3; i++) {
+    values[i] = luaL_checknumber(L, i + 2);
+  }
+
+  self->setVelocity(glm::vec3(values[0], values[1], values[2]));
+
+  return 0;
+}
+
+extern "C"
+int gr_node_rotational_velocity_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_node_ud* selfdata = (gr_node_ud*)luaL_checkudata(L, 1, "gr.node");
+  luaL_argcheck(L, selfdata != 0, 1, "Node expected");
+
+  SceneNode* self = selfdata->node;
+
+  double values[3];
+  
+  for (int i = 0; i < 3; i++) {
+    values[i] = luaL_checknumber(L, i + 2);
+  }
+
+  self->setRotationalVelocity(glm::vec3(values[0], values[1], values[2]));
+
+  return 0;
+}
+
 // Rotate a node.
 extern "C"
 int gr_node_rotate_cmd(lua_State* L)
@@ -557,8 +646,9 @@ int gr_texture_cmd(lua_State* L)
   data->texture = 0;
 
   const char* path = luaL_checkstring(L, 1);
+  const bool transparent = lua_toboolean(L, 2);
   
-  data->texture = new Texture(path);
+  data->texture = new Texture(path, transparent);
 
   luaL_newmetatable(L, "gr.texture");
   lua_setmetatable(L, -2);
@@ -602,9 +692,13 @@ static const luaL_Reg grlib_node_methods[] = {
   {"add_child", gr_node_add_child_cmd},
   {"set_material", gr_node_set_material_cmd},
   {"set_texture", gr_node_set_texture_cmd},
+  {"set_normalmap", gr_node_set_normalmap_cmd},
   {"scale", gr_node_scale_cmd},
   {"rotate", gr_node_rotate_cmd},
   {"translate", gr_node_translate_cmd},
+  {"acceleration", gr_node_acceleration_cmd},
+  {"velocity", gr_node_velocity_cmd},
+  {"rotational_velocity", gr_node_rotational_velocity_cmd},
   {"render", gr_render_cmd},
   {0, 0}
 };

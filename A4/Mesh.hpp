@@ -9,11 +9,15 @@
 #include "Primitive.hpp"
 #include "ColInfo.hpp"
 
+using namespace glm;
+
 struct Triangle
 {
 	size_t v1;
 	size_t v2;
 	size_t v3;
+
+	vec3 tangent;
 
 	Triangle( size_t pv1, size_t pv2, size_t pv3 )
 		: v1( pv1 )
@@ -30,11 +34,13 @@ public:
   bool hit(Ray &r, ColInfo& info);
 
 private:
-	std::vector<glm::vec3> m_vertices;
-	std::vector<glm::vec2> m_uvs;
+	std::vector<vec3> m_vertices;
+	std::vector<vec2> m_uvs;
 	std::vector<Triangle> m_faces;
+
 	bool intersectTriangle(Triangle tr, Ray r, ColInfo& info);
 	dvec3 Barycentric(dvec4 p, dvec3 a, dvec3 b, dvec3 c);
+	void computeTangents();
 
     friend std::ostream& operator<<(std::ostream& out, const Mesh& mesh);
 };

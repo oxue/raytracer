@@ -28,8 +28,9 @@ public:
     
 	int totalSceneNodes() const;
     
-    const glm::mat4& get_transform() const;
-    const glm::mat4& get_inverse() const;
+    const glm::mat4 get_timeTransform(float timeStep) const;
+    const glm::mat4 get_transform(float timeStep) const;
+    const glm::mat4 get_inverse(float timeStep) const;
     
     void set_transform(const glm::mat4& m);
     
@@ -41,10 +42,13 @@ public:
     void rotate(char axis, float angle);
     void scale(const glm::vec3& amount);
     void translate(const glm::vec3& amount);
-    virtual double getMaxRadius();
+    void setVelocity(const glm::vec3& amount);
+    void setAcceleration(const glm::vec3& amount);
+    void setRotationalVelocity(const glm::vec3& amount);
+    virtual double getMaxRadius(float t);
 
-    virtual bool hit(Ray &r, ColInfo &info, bool shortcut);
-    dvec4 backTraceNormal(dvec4 N);
+    virtual bool hit(Ray &r, ColInfo &info, bool shortcut, float t);
+    dvec4 backTraceNormal(dvec4 N,float t);
 
 	friend std::ostream & operator << (std::ostream & os, const SceneNode & node);
 
@@ -53,6 +57,10 @@ public:
     glm::mat4 invtrans;
     
     std::list<SceneNode*> children;
+    glm::vec3 m_velocity;
+    glm::vec3 m_rotational_velocity;
+    glm::vec3 m_acceleration;
+
 
 	NodeType m_nodeType;
 	std::string m_name;

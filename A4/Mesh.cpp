@@ -26,8 +26,13 @@ Mesh::Mesh( const std::string& fname )
 	while( ifs >> code ) {
 		if( code == "v" ) {
 			ifs >> vx >> vy >> vz;
+			if(fname == "goldfish.obj") {
+				vx *= 20;
+				vy *= 20;
+				vz *= 20;
+			}
 			m_vertices.push_back( glm::vec3( vx, vy, vz ) );
-			m_uvs.push_back(glm::vec2(0.0f, 0.0f));
+			m_uvs.push_back(glm::vec2(0.0f));
 		} else if(code == "q") {
 			double vu, vv;
 			ifs >> vx >> vy >> vz >> vu >> vv;
@@ -38,13 +43,44 @@ Mesh::Mesh( const std::string& fname )
 			m_faces.push_back( Triangle( s1 - 1, s2 - 1, s3 - 1 ) );
 		}
 	}
-	cout<<m_faces.size()<<endl;
+	cout<<"faces "<<m_faces.size()<<endl;
 	
 	for (vec3 v:m_vertices){
 		double r2 = v.x * v.x + v.y * v.y + v.z* v.z;
 		if(glm::sqrt(r2) > maxRadius) {
 			maxRadius = glm::sqrt(r2);
 		}
+	}
+
+	cout<<"max radius " << maxRadius<<endl;
+
+	computeTangents();
+}
+
+void Mesh::computeTangents() {
+	for(Triangle &tr:m_faces)
+	{
+		vec3 v1 = m_vertices[tr.v1];
+		vec3 v2 = m_vertices[tr.v2];
+		vec3 v3 = m_vertices[tr.v3];
+
+		vec2 w1 = m_uvs[tr.v1];
+		vec2 w2 = m_uvs[tr.v2];
+		vec2 w3 = m_uvs[tr.v3];
+
+		vec3 p1 = v2 - v1;
+		vec3 p2 = v3 - v1;
+
+		vec2 q1 = w2 - w1;
+		vec2 q2 = w3 - w1;
+
+		float r = 1.0f/(q1.x * q2.y - q2.x * q1.y);
+		vec3 sdir(
+			(q2.y * p1.x - q1.y * p2.x) * r,
+			(q2.y * p1.y - q1.y * p2.y) * r,
+			(q2.y * p1.z - q1.y * p2.z) * r);
+
+		tr.tangent = normalize(sdir);
 	}
 }
 
@@ -101,7 +137,7 @@ bool Mesh::intersectTriangle(Triangle tr, Ray r, ColInfo& info)
 	dvec3 qp = p-q;
 
 	dvec3 n = cross(ab,ac);
-	info.N = dvec4(n, 0.0);
+	info.N = normalize(dvec4(n, 0.0));
 	double d = dot(qp, n);
 	if(d<=0.0000) return false;
 
@@ -127,12 +163,15 @@ bool Mesh::intersectTriangle(Triangle tr, Ray r, ColInfo& info)
 		baryCoords.y * uvCoordsB +
 		baryCoords.z * uvCoordsC;
 
+	info.tangent = tr.tangent;
+	info.bitangent = normalize(cross(dvec3(tr.tangent), n));
+
 	return true;
 }
 
 bool Mesh::hit(Ray &r, ColInfo& info)
 {
-	bool hit;
+	bool hit = false;
 	info.t = INFINITY;
 	for(Triangle tr:m_faces){
 		ColInfo mInfo;

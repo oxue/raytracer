@@ -9,13 +9,21 @@
 #include "Primitive.hpp"
 #include "PhongMaterial.hpp"
 
-#define BOUNCES 5
-#define ENABLE_GLOSSY 1
+#define ENABLE_GLOSSY 0
 #define ENABLE_REFRACTION 1
+#define ENABLE_SOFT_SHADOWS 0
+#define ENABLE_MOTION_BLUR 0
+#define ENABLE_DEPTH_OF_FIELD 0
+
+#define BOUNCES 5
 #define NUM_THREADS 2
 #define PROGRESS_FLUSH_RATE 1000
-#define ENABLE_SOFT_SHADOWS 1
-#define AMBIENCE 0.4f
+#define TIMESTEPS 20
+#define DOFSAMPLES 10
+#define AMBIENCE 0.2f
+#define DOF_AMOUNT 2.0f
+#define FOCAL_LENGTH 4
+
 #define uint uint32_t
 
 using namespace std;
@@ -28,6 +36,39 @@ dmat4        device2WorldMat;
 mutex        progressMutex;
 uint         progress = 0;
 
+dvec3 background(0.9, 0.95, 0.9);
+
+double simplifiedFresnelModel(glm::dvec4 normal,
+							  const glm::dvec4 & IncomingVector,
+							  double fromReflectiveIndex,
+							  double toReflectiveIndex)
+{
+	if(dot(IncomingVector, normal) > 0) {
+		swap(fromReflectiveIndex, toReflectiveIndex);
+		normal = -normal;
+	}
+
+	// Test for TIR.
+	double n = fromReflectiveIndex / toReflectiveIndex;
+	double cosI = -glm::dot(IncomingVector, normal);
+	double sinT_2 = n * n * (1 - cosI * cosI);
+	
+	if (sinT_2 > 1) {
+		// TIR
+		return 1.0;
+	}
+	
+	double cosT = sqrt(1.0 - sinT_2);
+	
+	double Rs = (toReflectiveIndex * cosI - fromReflectiveIndex * cosT) / (toReflectiveIndex * cosI + fromReflectiveIndex * cosT);
+	Rs = Rs * Rs;
+	
+	double Rp = (toReflectiveIndex * cosT - fromReflectiveIndex * cosI) / (fromReflectiveIndex * cosI + toReflectiveIndex * cosT);
+	Rp = Rp * Rp;
+	
+	return (Rs + Rp) / 2.0;
+}
+
 Ray getPrimaryRay(vec3 eye, uint x, uint y){
 	dvec4 eyeVec = dvec4(eye, 1);
 	Ray r = {
@@ -36,6 +77,33 @@ Ray getPrimaryRay(vec3 eye, uint x, uint y){
 	};
 
 	return r;
+}
+
+vector<Ray> getDOFRays(Ray r, vec3 focalPoint) {
+	vector<Ray> ret;
+	for(auto i = 0; i < DOFSAMPLES; i++){
+		for(auto j = 0; j < DOFSAMPLES; j++){
+			float di = DOFSAMPLES;
+			di = i - di/2.0;
+			float dj = DOFSAMPLES;
+			dj = j - dj/2.0;
+			if(di * di + dj * dj > DOFSAMPLES * DOFSAMPLES / 4.0f) continue;
+			float randomRadius = frand();
+			float randXPos = cos(frand() * 3.1415) * randomRadius;
+			float randYPos = sqrt(randomRadius * randomRadius - randXPos * randXPos);
+			di += randXPos;
+			dj += randYPos;
+			dmat4 randX = glm::rotate(di/DOFSAMPLES* 2 * DOF_AMOUNT * 3.1415/180.0, dvec3(0,1,0));
+			dmat4 randY = glm::rotate(dj/DOFSAMPLES* 2 * DOF_AMOUNT * 3.1415/180.0, dvec3(1,0,0));
+			Ray dofRay = {
+				randX * randY * (r.origin - dvec4(focalPoint, 1)) + dvec4(focalPoint, 1),
+				transpose(inverse(randX * randY)) * r.head
+			};
+			ret.push_back(dofRay);	
+		}
+		
+	}
+	return ret;
 }
 
 void tracerWorker(
@@ -54,7 +122,28 @@ void tracerWorker(
 		for (uint x = 0; x < wi; ++x) {
 			if ((y * he + x) % NUM_THREADS == offset){
 				Ray r = getPrimaryRay(eye, x, y);
-				auto color = rayColor(r, lights, BOUNCES, root, dvec3(0.5, 0.7, 0.8));
+
+				vec3 color;
+
+				if(ENABLE_MOTION_BLUR) {
+					int samples = 0;
+					for(auto t = 0; t < TIMESTEPS; t++){
+						color += rayColor(r, lights, BOUNCES, root, background, (t + frand() - 0.5) * 0.5);
+						samples += 1;
+					}
+					color = color / float(samples);
+				} else if(ENABLE_DEPTH_OF_FIELD) {
+					vector<Ray> DOFRays = getDOFRays(r, vec3(0,0,FOCAL_LENGTH));
+					for (Ray dofr:DOFRays) {
+						color += rayColor(dofr, lights, BOUNCES, root, background, 0);
+					}
+					color = color / DOFRays.size();
+				} else {
+					color = rayColor(r, lights, BOUNCES, root, background, 0);
+				}
+
+				
+
 				image(x, y, 0) = color.x;
 				image(x, y, 1) = color.y;
 				image(x, y, 2) = color.z;
@@ -137,8 +226,6 @@ void A4_Render(
 	for( int i = 0; i < NUM_THREADS; i++){
 		workers.emplace_back(tracerWorker, i, ref(image), eye, lights, root);	
 	}
-	
-
 	for (auto& t : workers){
 		t.join();
 	}
@@ -177,7 +264,7 @@ vector<dvec3> getPerturbedLight(Light *l) {
 	return ret;
 }
 
-glm::dvec3 directLight(Ray& ir, glm::dvec4 P, glm::dvec4 N, const std::list<Light *> & lights, SceneNode* root, PhongMaterial material, int bounces, double refInd){
+glm::dvec3 directLight(Ray& ir, glm::dvec4 P, glm::dvec4 N, const std::list<Light *> & lights, SceneNode* root, PhongMaterial material, int bounces, double refInd, float t){
 	dvec3 col;
 
 	// Shadow rays
@@ -201,20 +288,27 @@ glm::dvec3 directLight(Ray& ir, glm::dvec4 P, glm::dvec4 N, const std::list<Ligh
 
 			ColInfo info;
 
-			if(root->hit(r, info, SHORTCUT) && info.t > EPSILON){
+			float blockFactor = 1.0f;
+			auto blocked = root->hit(r, info, true, t);
+
+			if(blocked && info.t > EPSILON && info.material.m_kt < EPSILON){
 				continue;
 			}
+			if(blocked){
+				blockFactor = info.material.m_kt;
+			}
+
 			if(notCloseTo0(material.m_kd)){
 				double cosTheta = glm::max(dot(normalize(dvec4(l->position,1) - P), N), 0.0);
 				double dist = length(r.head);
 
 				vec3 diffuse_light = (cosTheta * l->colour / (l->falloff[0] + dist * l->falloff[1] + dist * dist * l->falloff[2]));
-				shadowRayTotal+= material.m_kd * diffuse_light;
+				shadowRayTotal+= material.m_kd * diffuse_light * blockFactor;
 			}
 			if( material.m_shininess != 0){
 				dvec4 reflected = normalize(ir.head) - 2.0 * dot(normalize(ir.head), N) * N;
 				double cosTheta = glm::max(dot(normalize(dvec4(l->position,1) - P), reflected), 0.0);
-				shadowRayTotal += material.m_ks * glm::pow(cosTheta, material.m_shininess);
+				shadowRayTotal += material.m_ks * glm::pow(cosTheta, material.m_shininess) * blockFactor;
 			}
 		}
 
@@ -223,6 +317,8 @@ glm::dvec3 directLight(Ray& ir, glm::dvec4 P, glm::dvec4 N, const std::list<Ligh
 		
 	}
 
+	double transmittance = 1- simplifiedFresnelModel(N, normalize(ir.head), 1, 1.3);
+	transmittance = transmittance * transmittance;
 	// Reflection
 	if(material.m_kr > 0.001f){
 		dvec4 reflected = normalize(ir.head) - 2.0 * dot(normalize(ir.head), N) * N;
@@ -239,18 +335,19 @@ glm::dvec3 directLight(Ray& ir, glm::dvec4 P, glm::dvec4 N, const std::list<Ligh
 					reflectedRay.origin,
 					dvec4(dir,0)
 				};
-				reflectedColor += rayColor(glossRay, lights, bounces-1, root, dvec3(0,0,0));
+				reflectedColor += rayColor(glossRay, lights, bounces-1, root, background, t);
 			}
 			col += material.m_kr * reflectedColor / (double)perturbedRays.size();
 		}else{
-			col += material.m_kr * rayColor(reflectedRay, lights, bounces-1, root, dvec3(0,0,0));
+
+			col += (1-transmittance) * rayColor(reflectedRay, lights, bounces-1, root, background, t);
 		}
 		
 	}
 	if(ENABLE_REFRACTION){
 		if(material.m_kt > 0.001f){
 			Ray refractedRay = getRefractedRay(ir, N, P);
-			col += material.m_kt * rayColor(refractedRay, lights, bounces-1, root, dvec3(0.5, 0.7, 0.8));	
+			col += transmittance * rayColor(refractedRay, lights, bounces-1, root, background, t);	
 		}
 	}
 	
@@ -259,7 +356,7 @@ glm::dvec3 directLight(Ray& ir, glm::dvec4 P, glm::dvec4 N, const std::list<Ligh
 
 Ray getRefractedRay(Ray inRay, dvec4 N, dvec4 P){
 	double n1 = 1;
-	double n2 = 1.6;
+	double n2 = 1.3;
 	if(dot(inRay.head, N) > 0) {
 		swap(n1, n2);
 		N = -N;
@@ -299,17 +396,17 @@ vector<dvec3> getPerturbed(dvec3 direction, double shininess){
 	return ret;
 }
 
-glm::vec3 rayColor(Ray & r, const std::list<Light *> & lights, int bounces, SceneNode* root, dvec3 background) {
+glm::vec3 rayColor(Ray & r, const std::list<Light *> & lights, int bounces, SceneNode* root, dvec3 background, float t) {
 	dvec3 col;
 	dvec4 P;
 	ColInfo info;
 
 	if(!bounces) return background;
 
-	if(root->hit(r, info, SHORTCUT)) {
+	if(root->hit(r, info, SHORTCUT, t)) {
 		col = /*ke + */info.material.m_kd * AMBIENCE;
 		P = r.origin + info.t * r.head;
-		col += directLight(r, P, info.N, lights, root, info.material, bounces, 1.0);
+		col += directLight(r, P, info.N, lights, root, info.material, bounces, 1.0, t);
 		return col;
 	}else {
 		return background;

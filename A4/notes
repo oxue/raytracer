@@ -13,3 +13,16 @@ Nizhniy Novgorod, Russia
 Areas that need to be anti aliased are identified by recognizing that average differential between samples, then we shoot more rays more finely. We do this in parallel by doing it in batches
 
 To do soft shadows we add a radius component to the light, then for each shadow ray we generate many shadow rays pointing to random points inside the light, and take the average.
+
+to do motion blkur we take multple samples and use parameter r and d = 0.5 at^2 + vt + d0 to calcupate the oritentation of the object.
+
+[ ] 1: Implement Cone and Cylinder Primitives  
+[x] 2: Texture Mapping  
+[x] 3: Normal Mapping  
+[ ] 4: Adaptive Anti Aliasing  
+[x] 5: Glossy Reflection  
+[ ] 6: Grid Acceleration  
+[x] 7: Depth of field  
+[x] 8: Motion Blur  
+[x] 9: Refraction 
+[ ] 10: Final Scene 
