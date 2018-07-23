@@ -16,7 +16,7 @@
 #include <cstdio>
 #include <ctime>
 
-#define ENABLE_GLOSSY 0
+#define ENABLE_GLOSSY 1
 #define ENABLE_REFRACTION 0
 #define ENABLE_SOFT_SHADOWS 0
 #define ENABLE_MOTION_BLUR 0
@@ -24,7 +24,7 @@
 #define ENABLE_AA 0
 #define ENABLE_GRID 0
 
-#define BOUNCES 5
+#define BOUNCES 2
 #define NUM_THREADS 2
 #define PROGRESS_FLUSH_RATE 1000
 #define TIMESTEPS 20

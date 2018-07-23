@@ -1,0 +1,123 @@
+To compile just use premake4 gmake && make release=config
+
+I built on top of A4 so the files are in Ar directory
+
+The many features are enabled through #define flags  in the top of A4.cpp; My usual workflow is:
+- change flags
+- cd A4
+- make config=release && ./A4 -acc Assets/prim.lua
+
+note the config release flag is used for performance and the -acc flag is used for bounding sphere acceleration
+
+Below are a list of objectives. My A4 objective was reflection
+[x] 1: Implement Cone and Cylinder Primitives  
+[x] 2: Texture Mapping  
+[x] 3: Normal Mapping  
+[x] 4: Adaptive Anti Aliasing  
+[x] 5: Glossy Reflection  
+[x] 6: Grid Acceleration  
+[x] 7: Depth of field  
+[x] 8: Motion Blur  
+[x] 9: Refraction 
+[x] 10: Final Scene
+
+[x] Extra: Soft Shadows
+
+An [x] indicates the objective was completed as of this submission
+
+The renders are in A4 directory, and here they are associated with the corresponding objective, and some short comments
+
+
+
+=============================== Cone and Cylinder Primitives ==============================
+Used in conjunction with DOF to produce pleasing image
+
+-dof and prims.png
+-primitives.png
+
+
+
+=============================== Texture Mapping ===========================================
+Rudimentary refraction is also included in this screenshot
+
+-textures.png
+
+
+
+=============================== Normal Mapping ============================================
+This clearly shows normal mapping with 2 different colored lights!
+
+-normal mapping with 2 lights
+-normal mapping + refraction.png
+
+
+
+=============================== Adaptive Anti Aliasing ====================================
+one of the screenshots hilights the AA candidates in red
+
+-antialias location.png
+-primitives.png (unantialiased)
+-antialiased primitives.png 
+
+
+
+=============================== Glossy Reflection =========================================
+- gloss.png
+
+
+
+=============================== Grid Acceleration =========================================
+I rendered 100, 1000, 10000 spheres to test out the speed of using grid and not;
+
+the numbers:
+
+100
+real	0m2.798s grid
+================= 
+real	0m0.440s no grid
+
+1000
+real	0m4.265s grid
+================= 
+real	0m4.978s no grid
+
+10000
+real	0m16.748s grid
+================= 
+real	0m40.861s no grid
+
+- grid.png (what 10k spheres looks like)
+
+
+
+=============================== Depth of field ============================================
+DOF has 2 renders, close and far, I can control the focal distance
+
+-close DOF.png
+-far DOF.png
+-dof and prims.png
+
+
+
+=============================== Motion Blur ===============================================
+with and without rotations
+
+-motion blur with cube and rotation.png
+-motion blur with soft shadows.png
+
+
+
+=============================== Refraction ================================================
+frenel is included!
+
+-normal mapping + refraction.png
+-refraction fresnel.png
+
+
+
+=============================== Final Scene ===============================================
+Tribute to MC escher 3 worlds, this is 4 worlds becase of the world in the bubble
+
+-4worlds.png
+
+EXTRA: softshadows.png
