@@ -28,7 +28,7 @@ void A4_Render(
 float frand();
 Ray getRefractedRay(Ray inRay, dvec4 N, dvec4 P);
 glm::dvec4 device2World(glm::dvec4 deviceCoord);
-glm::dvec4 device2World(int x, int y);
+glm::dvec4 device2World(double x, double y);
 glm::vec3 rayColor(Ray & r, const std::list<Light *> & lights, int bounces, SceneNode* root, glm::dvec3 background, float t);
 std::vector<dvec3> getPerturbed(dvec3 direction, double shininess);
 glm::dvec3 directLight(

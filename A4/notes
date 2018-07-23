@@ -16,7 +16,7 @@ To do soft shadows we add a radius component to the light, then for each shadow 
 
 to do motion blkur we take multple samples and use parameter r and d = 0.5 at^2 + vt + d0 to calcupate the oritentation of the object.
 
-[ ] 1: Implement Cone and Cylinder Primitives  
+[x] 1: Implement Cone and Cylinder Primitives  
 [x] 2: Texture Mapping  
 [x] 3: Normal Mapping  
 [ ] 4: Adaptive Anti Aliasing  

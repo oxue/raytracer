@@ -55,6 +55,22 @@ private:
   double m_radius;
 };
 
+class Cyl : public Primitive {
+public:
+  Cyl();
+  virtual ~Cyl();
+  bool hit(Ray &r, ColInfo &info);
+  dvec3 computeNormal(dvec3 p, dvec3 q, Ray ray, double t);
+};
+
+class Cone : public Primitive {
+public:
+  Cone();
+  virtual ~Cone();
+  bool hit(Ray &r, ColInfo &info);
+  dvec3 computeNormal(dvec3 p, dvec3 q, Ray ray, double t);
+};
+
 class NonhierBox : public Primitive {
 public:
   NonhierBox(const glm::vec3& pos, double size)

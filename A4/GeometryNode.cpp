@@ -73,6 +73,7 @@ bool GeometryNode::hit(Ray &r, ColInfo &info, bool shortcut, float t){
 	{
 		PhongMaterial* pMat = (PhongMaterial*)m_material;
 		info.material = *pMat;
+
 		if(pMat->texture != nullptr){
 			vec4 texColor = pMat->texture->getColor(info.uv.x, info.uv.y);//N.x/2.0 + 0.5,N.y/2.0 + 0.5);
 			if(texColor.w == 0) return false;
@@ -90,6 +91,7 @@ bool GeometryNode::hit(Ray &r, ColInfo &info, bool shortcut, float t){
 			info.N = normalize(info.N);
 		}
 		info.N = backTraceNormal(info.N, t);
+		//cout<<length(info.N)<<endl;
 
 		return true;
 	}
