@@ -16,22 +16,22 @@
 #include <cstdio>
 #include <ctime>
 
-#define ENABLE_GLOSSY 1
-#define ENABLE_REFRACTION 0
+#define ENABLE_GLOSSY 0
+#define ENABLE_REFRACTION 1
 #define ENABLE_SOFT_SHADOWS 0
 #define ENABLE_MOTION_BLUR 0
-#define ENABLE_DEPTH_OF_FIELD 0
+#define ENABLE_DEPTH_OF_FIELD 1
 #define ENABLE_AA 0
 #define ENABLE_GRID 0
 
-#define BOUNCES 2
+#define BOUNCES 4
 #define NUM_THREADS 2
 #define PROGRESS_FLUSH_RATE 1000
 #define TIMESTEPS 20
-#define DOFSAMPLES 10
+#define DOFSAMPLES 4
 #define AMBIENCE 0.2f
-#define DOF_AMOUNT 2.0f
-#define FOCAL_LENGTH 1
+#define DOF_AMOUNT 3.0f
+#define FOCAL_LENGTH 12
 
 #define uint uint32_t
 
@@ -102,8 +102,9 @@ vector<Ray> getDOFRays(Ray r, vec3 focalPoint) {
 			float randYPos = sqrt(randomRadius * randomRadius - randXPos * randXPos);
 			di += randXPos;
 			dj += randYPos;
-			dmat4 randX = glm::rotate(di/DOFSAMPLES* 2 * DOF_AMOUNT * 3.1415/180.0, dvec3(0,1,0));
-			dmat4 randY = glm::rotate(dj/DOFSAMPLES* 2 * DOF_AMOUNT * 3.1415/180.0, dvec3(1,0,0));
+			double dofAmount = DOF_AMOUNT / FOCAL_LENGTH;
+			dmat4 randX = glm::rotate(di/DOFSAMPLES* 2 * dofAmount * 3.1415/180.0, dvec3(0,1,0));
+			dmat4 randY = glm::rotate(dj/DOFSAMPLES* 2 * dofAmount * 3.1415/180.0, dvec3(1,0,0));
 			Ray dofRay = {
 				randX * randY * (r.origin - dvec4(focalPoint, 1)) + dvec4(focalPoint, 1),
 				transpose(inverse(randX * randY)) * r.head

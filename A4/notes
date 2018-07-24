@@ -16,13 +16,22 @@ To do soft shadows we add a radius component to the light, then for each shadow 
 
 to do motion blkur we take multple samples and use parameter r and d = 0.5 at^2 + vt + d0 to calcupate the oritentation of the object.
 
+ftp://ftp.ecs.csus.edu/clevengr/155/LectureNotes/Fall12/08BumpMappingLectureNotes.pdf
+
+https://hal.inria.fr/inria-00510157/document
+
+http://www.cs.cornell.edu/courses/cs465/2004fa/lectures/22advray/22advray.pdf
+
+http://www.graphicon.ru/html/2010/conference/EN/Se2/02.pdf
+http://web.yonsei.ac.kr/wjlee/document/bjjin_HPG.pdf
+
 [x] 1: Implement Cone and Cylinder Primitives  
 [x] 2: Texture Mapping  
 [x] 3: Normal Mapping  
-[ ] 4: Adaptive Anti Aliasing  
+[x] 4: Adaptive Anti Aliasing  
 [x] 5: Glossy Reflection  
-[ ] 6: Grid Acceleration  
+[x] 6: Grid Acceleration  
 [x] 7: Depth of field  
 [x] 8: Motion Blur  
 [x] 9: Refraction 
-[ ] 10: Final Scene 
+[x] 10: Final Scene 
