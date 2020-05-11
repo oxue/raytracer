@@ -1,5 +1,7 @@
 # CS488 Fall 2015 Project Code
 
+![screenie](https://github.com/oxue/raytracer/blob/master/A4/primitives.png?raw=true)
+
 ---
 
 ## Dependencies
